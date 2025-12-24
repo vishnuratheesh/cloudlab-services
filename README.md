@@ -1,6 +1,6 @@
 # Home DNS Stack: Pi-hole + Unbound + Nginx Proxy Manager
 
-This repository contains the configuration for hosting a secure, private DNS and Proxy stack on an Oracle Cloud Free Tier instance, utilizing Tailscale for network isolation.
+This repository contains the configuration for hosting a secure, private DNS and Proxy stack on a cloud instance (e.g., Oracle Cloud Free Tier), utilizing Tailscale for network isolation.
 
 ## Architecture
 
@@ -29,7 +29,7 @@ This repository contains the configuration for hosting a secure, private DNS and
 
 ### 1. Prerequisites
 
--   An Oracle Cloud Instance (Ubuntu/Linux).
+-   A Cloud Instance (Ubuntu/Linux).
 -   Tailscale installed and running on the instance.
 -   Docker and Docker Compose installed on the instance.
 -   A GitHub repository with this code.
