@@ -1,0 +1,57 @@
+services:
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    restart: unless-stopped
+    hostname: unbound
+    volumes:
+      - ./config/unbound/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+    networks:
+      - private_network
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    ports:
+      - "${TAILSCALE_IP}:53:53/tcp"
+      - "${TAILSCALE_IP}:53:53/udp"
+      # We do NOT expose port 80/443 directly to host, as NPM will handle web traffic
+      # If you need direct access for debugging, you could uncomment below, but it conflicts with NPM on 80
+      # - "${TAILSCALE_IP}:8080:80/tcp"
+    environment:
+      TZ: 'UTC'
+      # Point to the unbound container
+      PIHOLE_DNS: 'unbound#53'
+      # WEBPASSWORD should be set via environment variable or .env file for security
+      WEBPASSWORD: ${PIHOLE_PASSWORD:-admin}
+    volumes:
+      - ./data/pihole:/etc/pihole
+      - ./data/pihole_dnsmasq:/etc/dnsmasq.d
+    networks:
+      - private_network
+    depends_on:
+      - unbound
+
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: npm
+    restart: unless-stopped
+    ports:
+      # Public HTTP/HTTPS ports (bound to Tailscale IP)
+      - "${TAILSCALE_IP}:80:80"
+      - "${TAILSCALE_IP}:443:443"
+      # Admin Interface
+      - "${TAILSCALE_IP}:81:81"
+    environment:
+      # prevent npm from failing if config.json is missing
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - ./data/npm:/data
+      - ./data/npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - private_network
+
+networks:
+  private_network:
+    driver: bridge
