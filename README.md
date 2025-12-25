@@ -34,27 +34,55 @@ This repository contains the configuration for hosting a secure, private DNS and
 -   Docker and Docker Compose installed on the instance.
 -   A GitHub repository with this code.
 
-### 2. GitHub Secrets
+### 2. Tailscale & Server Setup (One-time)
 
-To enable the automated deployment workflow, you must add the following **Secrets** to your GitHub repository settings (`Settings` -> `Secrets and variables` -> `Actions`):
+This deployment uses **GitOps with Tailscale**, meaning the GitHub Runner joins your private network to deploy securely.
+
+#### A. Tailscale ACLs
+Update your Tailscale Access Controls to allow the `tag:ci` tag to SSH into your server (`tag:server`).
+
+```json
+// In "tagOwners":
+"tagOwners": {
+  "tag:ci": ["autogroup:admin"],
+},
+
+// In "ssh":
+"ssh": [
+  {
+    "action": "accept",
+    "src": ["tag:ci"],
+    "dst": ["tag:server"],
+    "users": ["sysadmin", "ubuntu"] // Match your server user
+  }
+],
+```
+
+#### B. Server SSH Keys
+Ensure the public key corresponding to `SSH_PRIVATE_KEY` is in `~/.ssh/authorized_keys` on your server.
+
+### 3. GitHub Secrets
+
+Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets and variables` -> `Actions`):
 
 | Secret Name       | Description                                                                 |
 | ----------------- | --------------------------------------------------------------------------- |
-| `SSH_HOST`        | The public IP address (or hostname) of your Oracle Cloud instance.          |
-| `SSH_USERNAME`    | The SSH username (e.g., `ubuntu`).                                          |
+| `TS_AUTHKEY`      | **Reusable, Ephemeral** Tailscale Auth Key tagged with `tag:ci`.            |
+| `SSH_HOST`        | The **Tailscale IP address** of your server (e.g., `100.x.y.z`).            |
+| `SSH_USERNAME`    | The SSH username (e.g., `sysadmin` or `ubuntu`).                            |
 | `SSH_PRIVATE_KEY` | Your private SSH key (PEM format) used to access the instance.              |
 | `TAILSCALE_IP`    | The Tailscale IP address of your Oracle instance (e.g., `100.x.y.z`).       |
 | `PIHOLE_PASSWORD` | (Optional) Password for the Pi-hole Web Interface. Defaults to `admin`.     |
 
-### 3. First Run
+### 4. Deployment
 
-Once the secrets are configured, push a commit to the `main` branch. The GitHub Action will:
-1.  SSH into your server.
-2.  Copy the configuration files to `/lab`.
-3.  Create a `.env` file with your `TAILSCALE_IP`.
-4.  Run `docker compose up -d`.
+Push to the `main` branch. The workflow will:
+1.  Join the Tailscale network (as `tag:ci`).
+2.  Connect to your server via SSH over the private tunnel.
+3.  Clean up old config (`rm -rf config docker-compose.yml`) in `/lab/docker/cloudlab` while preserving `data/`.
+4.  Deploy the new configuration and restart services.
 
-### 4. Verification
+### 5. Verification
 
 After deployment, connect to your Tailscale network on your local machine and try accessing:
 
