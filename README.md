@@ -61,6 +61,14 @@ Update your Tailscale Access Controls to allow the `tag:ci` tag to SSH into your
 #### B. Server SSH Keys
 Ensure the public key corresponding to `SSH_PRIVATE_KEY` is in `~/.ssh/authorized_keys` on your server.
 
+#### C. Directory Setup
+Create the target directory for deployment and ensure the deployment user owns it:
+
+```bash
+sudo mkdir -p /lab/docker
+sudo chown -R <username>:<username> /lab/docker
+```
+
 ### 3. GitHub Secrets
 
 Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets and variables` -> `Actions`):
