@@ -67,7 +67,8 @@ Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets 
 
 | Secret Name       | Description                                                                 |
 | ----------------- | --------------------------------------------------------------------------- |
-| `TS_AUTHKEY`      | **Reusable, Ephemeral** Tailscale Auth Key tagged with `tag:ci`.            |
+| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID (Description: "GitHub Actions", Tag: `tag:ci`). |
+| `TS_OAUTH_SECRET` | Tailscale OAuth Client Secret.                                              |
 | `SSH_HOST`        | The **Tailscale IP address** of your server (e.g., `100.x.y.z`).            |
 | `SSH_USERNAME`    | The SSH username (e.g., `sysadmin` or `ubuntu`).                            |
 | `SSH_PRIVATE_KEY` | Your private SSH key (PEM format) used to access the instance.              |
