@@ -1,6 +1,6 @@
 # Home DNS Stack: Pi-hole + Unbound + Nginx Proxy Manager
 
-This repository contains the configuration for hosting a secure, private DNS and Proxy stack on a cloud instance (e.g., Oracle Cloud Free Tier), utilizing Tailscale for network isolation.
+This repository contains the configuration for hosting a secure, private DNS and Proxy stack on a cloud instance (VPS), utilizing Tailscale for network isolation.
 
 ## Architecture
 
@@ -71,7 +71,7 @@ Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets 
 | `SSH_HOST`        | The **Tailscale IP address** of your server (e.g., `100.x.y.z`).            |
 | `SSH_USERNAME`    | The SSH username (e.g., `sysadmin` or `ubuntu`).                            |
 | `SSH_PRIVATE_KEY` | Your private SSH key (PEM format) used to access the instance.              |
-| `TAILSCALE_IP`    | The Tailscale IP address of your Oracle instance (e.g., `100.x.y.z`).       |
+| `TAILSCALE_IP`    | The Tailscale IP address of your server instance (e.g., `100.x.y.z`).       |
 | `PIHOLE_PASSWORD` | (Optional) Password for the Pi-hole Web Interface. Defaults to `admin`.     |
 
 ### 4. Deployment
