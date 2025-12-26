@@ -22,6 +22,10 @@ services:
     volumes:
       - ./data/tailscale/pihole:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
+    ports:
+      # Expose port 53 to host for LAN devices (e.g. Home Router)
+      - "53:53/tcp"
+      - "53:53/udp"
     cap_add:
       - NET_ADMIN
       - NET_RAW
