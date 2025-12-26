@@ -47,6 +47,7 @@ services:
     volumes:
       - ./data/pihole:/etc/pihole
       - ./data/pihole_dnsmasq:/etc/dnsmasq.d
+      - ./config/pihole/02-tailscale.conf:/etc/dnsmasq.d/02-tailscale.conf:ro
     depends_on:
       - unbound
       - ts-pihole
