@@ -123,3 +123,29 @@ If the deployment fails with `Error: bind: address already in use` for port 53, 
     ```bash
     sudo systemctl restart systemd-resolved
     ```
+
+### Kernel Buffer Limits (Unbound Warnings)
+
+If you see warnings like `so-rcvbuf 1048576 was not granted` or `so-sndbuf 4194304 was not granted` in the Unbound logs, it means the host system's kernel buffer limits are lower than what Unbound is requesting (1MB receive, 4MB send).
+
+To fix this properly, you need to increase the limits on the host machine.
+
+1.  **Check current limits:**
+    ```bash
+    sysctl net.core.rmem_max
+    sysctl net.core.wmem_max
+    ```
+
+2.  **Apply new limits temporarily:**
+    ```bash
+    sudo sysctl -w net.core.rmem_max=1048576
+    sudo sysctl -w net.core.wmem_max=4194304
+    ```
+
+3.  **Make them persistent:**
+    Add the following lines to `/etc/sysctl.conf`:
+    ```
+    net.core.rmem_max=1048576
+    net.core.wmem_max=4194304
+    ```
+    Then run `sudo sysctl -p` to apply changes.
