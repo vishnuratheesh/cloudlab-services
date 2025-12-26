@@ -34,7 +34,7 @@ jobs:
       - name: Copy files to server
         run: |
           # Create a temporary archive of the current directory, excluding .git
-          tar --exclude='.git' --exclude='.github' -czf /tmp/deploy.tar.gz .
+          tar --exclude='.git' --exclude='.github' --exclude='./data' -czf /tmp/deploy.tar.gz .
           # Copy archive to server
           scp /tmp/deploy.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/lab/docker/cloudlab/deploy.tar.gz
           # Extract on server (Clean config and docker-compose first, but preserve data)
