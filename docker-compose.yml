@@ -1,11 +1,11 @@
 services:
   unbound:
-    image: mvance/unbound:latest
+    image: klutchell/unbound:latest
     container_name: unbound
     restart: unless-stopped
     hostname: unbound
     volumes:
-      - ./config/unbound/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+      - ./config/unbound/unbound.conf:/etc/unbound/unbound.conf:ro
     networks:
       - private_network
 
