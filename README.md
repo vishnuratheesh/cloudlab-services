@@ -108,3 +108,18 @@ dig @<TAILSCALE_IP> google.com
 
 -   **Configuration Changes:** Edit `config/unbound/unbound.conf` locally and push to GitHub. The pipeline will update the file and restart containers.
 -   **Updates:** The `docker-compose.yml` uses `latest` tags. Restarting the stack (or re-running the pipeline) will pull new images if available.
+
+## Troubleshooting
+
+### Port 53 Already in Use
+
+If the deployment fails with `Error: bind: address already in use` for port 53, it is likely that `systemd-resolved` (default on Ubuntu) is listening on that port. To fix this, you need to disable the system stub listener on the host:
+
+1.  **Edit `resolved.conf`:**
+    ```bash
+    sudo sed -r -i.orig 's/#?DNSStubListener=yes/DNSStubListener=no/g' /etc/systemd/resolved.conf
+    ```
+2.  **Restart the service:**
+    ```bash
+    sudo systemctl restart systemd-resolved
+    ```
