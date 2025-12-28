@@ -80,6 +80,7 @@ Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets 
 | `SSH_HOST`        | The **Tailscale IP address** of your server (e.g., `100.x.y.z`).            |
 | `SSH_USERNAME`    | The SSH username (e.g., `sysadmin` or `ubuntu`).                            |
 | `SSH_PRIVATE_KEY` | Your private SSH key (PEM format) used to access the instance.              |
+| `TS_AUTHKEY`      | **Required**. A **Reusable** Tailscale Auth Key (Tags: `tag:server` recommended). |
 | `TAILSCALE_IP`    | The Tailscale IP address of your server instance (e.g., `100.x.y.z`).       |
 | `PIHOLE_PASSWORD` | (Optional) Password for the Pi-hole Web Interface. Defaults to `admin`.     |
 
@@ -93,11 +94,19 @@ Push to the `main` branch. The workflow will:
 
 ### 5. Verification
 
-After deployment, connect to your Tailscale network on your local machine and try accessing:
+After deployment, connect to your Tailscale network on your local machine.
 
--   **NPM Admin:** `http://<TAILSCALE_IP>:81` (Default: `admin@example.com` / `changeme`)
--   **Pi-hole:** Since NPM is running on port 80, you will likely need to configure a Proxy Host in NPM to access Pi-hole, OR access it via the internal docker network if you set up port forwarding.
-    *   *Initial Setup:* Use NPM to proxy `http://pihole.internal` (or a real domain) to the container hostname `pihole` on port `80`.
+-   **NPM (Nginx Proxy Manager):**
+    -   Admin Interface: `http://npm:81` (or use the Tailscale IP of the `ts-npm` container).
+    -   Default Login: `admin@example.com` / `changeme`.
+    -   Securely exposes services via HTTP/HTTPS on the `npm` Tailscale machine.
+
+-   **Pi-hole:**
+    -   Web Interface: `http://pihole/admin` (or `http://<ts-pihole-ip>/admin`).
+    -   **Note:** Pi-hole and NPM run on separate Tailscale "machines" (`pihole` and `npm`), so there are no port conflicts. Both can listen on port 80 of their respective private IPs.
+
+-   **Internal Communication:**
+    -   NPM can proxy to Pi-hole using the address `pihole` (port 80) since they share the same Docker network (`private_network`).
 
 To verify DNS:
 ```bash

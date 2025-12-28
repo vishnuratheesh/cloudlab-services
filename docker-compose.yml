@@ -52,6 +52,43 @@ services:
       - unbound
       - ts-pihole
 
+  ts-npm:
+    image: tailscale/tailscale:latest
+    container_name: ts-npm
+    hostname: npm
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      # Explicitly accepting DNS might be useful if NPM needs to resolve things via MagicDNS
+      - TS_EXTRA_ARGS=--accept-dns=true
+    volumes:
+      - ./data/tailscale/npm:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: npm
+    restart: unless-stopped
+    network_mode: service:ts-npm
+    environment:
+      # NPM uses SQLite by default if DB params aren't provided, which is fine for this scale
+      DISABLE_IPV6: 'true'
+    volumes:
+      - ./data/npm:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - ts-npm
+
 networks:
   private_network:
     driver: bridge
