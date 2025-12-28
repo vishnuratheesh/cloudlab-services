@@ -45,4 +45,5 @@ jobs:
           ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "cd /lab/docker/cloudlab && \
           echo 'TAILSCALE_IP=${{ secrets.TAILSCALE_IP }}' > .env && \
           echo 'PIHOLE_PASSWORD=${{ secrets.PIHOLE_PASSWORD }}' >> .env && \
+          echo 'TS_AUTHKEY=${{ secrets.TS_AUTHKEY }}' >> .env && \
           docker compose up -d --remove-orphans"
