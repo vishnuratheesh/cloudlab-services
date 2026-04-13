@@ -1,0 +1,49 @@
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+
+theme: dark
+
+jwt_secret: a_very_important_secret
+
+default_2fa_factor: totp
+
+server:
+  host: 0.0.0.0
+  port: 9091
+
+log:
+  level: info
+
+totp:
+  issuer: authelia.com
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: "*.example.com"
+      policy: bypass
+
+session:
+  name: authelia_session
+  secret: unsecure_session_secret
+  expiration: 3600
+  inactivity: 300
+  domain: example.com
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt
