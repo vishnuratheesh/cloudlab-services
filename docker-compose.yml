@@ -126,6 +126,7 @@ services:
     container_name: n8n
     restart: unless-stopped
     network_mode: service:ts-n8n
+    user: "1000:1000"
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n}
