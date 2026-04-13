@@ -89,6 +89,148 @@ services:
     depends_on:
       - ts-npm
 
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-n8n}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-n8n}
+      - POSTGRES_DB=${POSTGRES_DB:-n8n}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - private_network
+
+  ts-n8n:
+    image: tailscale/tailscale:latest
+    container_name: ts-n8n
+    hostname: n8n
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ./data/tailscale/n8n:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    network_mode: service:ts-n8n
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n}
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-n8n}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:-n8n}
+      - N8N_HOST=n8n
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://n8n:5678/
+      - GENERIC_TIMEZONE=UTC
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    depends_on:
+      - postgres
+      - ts-n8n
+
+  ts-ollama:
+    image: tailscale/tailscale:latest
+    container_name: ts-ollama
+    hostname: ollama
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ./data/tailscale/ollama:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    network_mode: service:ts-ollama
+    volumes:
+      - ./data/ollama:/root/.ollama
+    depends_on:
+      - ts-ollama
+    # Add deploy block to easily enable GPU in the future
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  ollama-pull-models:
+    image: curlimages/curl:latest
+    container_name: ollama-pull-models
+    restart: "no"
+    entrypoint: [""]
+    networks:
+      - private_network
+    depends_on:
+      ts-ollama:
+        condition: service_started
+      ollama:
+        condition: service_started
+    command: >
+      sh -c "
+      echo 'Waiting for Ollama to be available...' &&
+      while ! curl -s http://ts-ollama:11434/api/tags >/dev/null; do sleep 5; done &&
+      echo 'Ollama is up! Pulling llama3.1:8b...' &&
+      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"llama3.1:8b\"}' &&
+      echo 'Pulling deepseek-coder-v2:lite...' &&
+      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"deepseek-coder-v2:lite\"}' &&
+      echo 'Done!'"
+
+  ts-uptime-kuma:
+    image: tailscale/tailscale:latest
+    container_name: ts-uptime-kuma
+    hostname: uptime-kuma
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ./data/tailscale/uptime-kuma:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    network_mode: service:ts-uptime-kuma
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    depends_on:
+      - ts-uptime-kuma
+
 networks:
   private_network:
     driver: bridge
