@@ -199,8 +199,8 @@ services:
       while ! curl -s http://ts-ollama:11434/api/tags >/dev/null; do sleep 5; done &&
       echo 'Ollama is up! Pulling llama3.1:8b...' &&
       curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"llama3.1:8b\"}' &&
-      echo 'Pulling deepseek-coder-v2:lite...' &&
-      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"deepseek-coder-v2:lite\"}' &&
+      echo 'Pulling qwen2.5-coder:7b...' &&
+      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"qwen2.5-coder:7b\"}' &&
       echo 'Done!'"
 
   ts-uptime-kuma:
@@ -230,6 +230,70 @@ services:
       - ./data/uptime-kuma:/app/data
     depends_on:
       - ts-uptime-kuma
+
+
+  ts-open-webui:
+    image: tailscale/tailscale:latest
+    container_name: ts-open-webui
+    hostname: open-webui
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ./data/tailscale/open-webui:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    network_mode: service:ts-open-webui
+    environment:
+      - OLLAMA_BASE_URL=http://ts-ollama:11434
+      # Provide WEBUI_SECRET_KEY in an .env file or environment for production
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-default_insecure_secret}
+    volumes:
+      - ./data/open-webui:/app/backend/data
+    depends_on:
+      - ts-open-webui
+      - ts-ollama
+
+  ts-authelia:
+    image: tailscale/tailscale:latest
+    container_name: ts-authelia
+    hostname: authelia
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ./data/tailscale/authelia:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - private_network
+
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    network_mode: service:ts-authelia
+    volumes:
+      - ./config/authelia:/config
+    environment:
+      - TZ=UTC
+    depends_on:
+      - ts-authelia
 
 networks:
   private_network:

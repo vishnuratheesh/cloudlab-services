@@ -1,13 +1,25 @@
-# Home DNS Stack: Pi-hole + Unbound + Nginx Proxy Manager
+# Home Lab Stack: DNS, AI Automation & Monitoring
 
-This repository contains the configuration for hosting a secure, private DNS and Proxy stack on a cloud instance (VPS), utilizing Tailscale for network isolation.
+This repository contains the configuration for hosting a secure, private Home Lab stack on a cloud instance (VPS), utilizing Tailscale for network isolation. The stack includes a DNS/Proxy layer, an AI automation layer, and system monitoring.
 
 ## Architecture
 
--   **Tailscale:** Provides the secure, private network layer. All services are bound to the Tailscale IP of the host, shielding them from the public internet.
+All services are bound to the Tailscale IP of the host, shielding them from the public internet. We use a **Tailscale Sidecar** architecture, where each major service (or group of services) gets its own Tailscale IP (machine), preventing port conflicts and allowing for clean separation of concerns.
+
+### Core DNS & Proxy Layer
 -   **Unbound:** Running as a recursive DNS resolver. It contacts root DNS servers directly rather than forwarding queries to upstream providers like Google or Cloudflare.
--   **Pi-hole:** Network-wide ad blocking. It uses the local Unbound container as its sole upstream DNS.
--   **Nginx Proxy Manager (NPM):** Provides a friendly UI for managing reverse proxies and SSL certificates (if needed).
+-   **Pi-hole:** Network-wide ad blocking. It uses the local Unbound container as its sole upstream DNS. Runs on the `pihole` Tailscale machine.
+-   **Nginx Proxy Manager (NPM):** Provides a friendly UI for managing reverse proxies and SSL certificates. Runs on the `npm` Tailscale machine.
+
+### AI & Automation Layer
+-   **Ollama:** Local AI model serving. Pre-configured to pull models like `llama3.1:8b` and `qwen2.5-coder:7b`. Runs on the `ollama` Tailscale machine.
+-   **Open WebUI:** A ChatGPT-like interface for interacting with the Ollama models. Supports RAG, voice, and user accounts. Runs on the `open-webui` Tailscale machine.
+-   **n8n:** Workflow automation tool for integrating AI with other services. Runs on the `n8n` Tailscale machine.
+-   **PostgreSQL (with pgvector):** Database backend for n8n, using `pgvector` for native AI memory and vector store capabilities.
+
+### Security & Monitoring Layer
+-   **Authelia:** An open-source authentication server providing Single Sign-On (SSO) and Two-Factor Authentication (2FA). Integrates with Nginx Proxy Manager to protect exposed services. Runs on the `authelia` Tailscale machine.
+-   **Uptime Kuma:** Self-hosted monitoring tool for tracking the uptime of services. Runs on the `uptime-kuma` Tailscale machine.
 
 ## Directory Structure
 
@@ -16,11 +28,16 @@ This repository contains the configuration for hosting a secure, private DNS and
 ├── config/
 │   ├── unbound/       # Unbound configuration files
 │   ├── pihole/        # Placeholders for mapped config volumes
-│   └── npm/           # Placeholders for mapped config volumes
+│   ├── npm/           # Placeholders for mapped config volumes
+│   └── authelia/      # Authelia configuration files
 ├── data/
 │   ├── pihole/        # Persistent data for Pi-hole
 │   ├── npm/           # Persistent data for NPM
-│   └── ...
+│   ├── n8n/           # Persistent data for n8n
+│   ├── ollama/        # Persistent data for Ollama models
+│   ├── postgres/      # Persistent data for PostgreSQL
+│   ├── uptime-kuma/   # Persistent data for Uptime Kuma
+│   └── open-webui/    # Persistent data for Open WebUI
 ├── .github/workflows/ # CD Pipeline
 └── docker-compose.yml # Service definitions
 ```
@@ -94,24 +111,77 @@ Push to the `main` branch. The workflow will:
 
 ### 5. Verification
 
-After deployment, connect to your Tailscale network on your local machine.
+After deployment, connect to your Tailscale network on your local machine. You can access the services via their Tailscale machine names (if MagicDNS is enabled) or their Tailscale IPs.
 
 -   **NPM (Nginx Proxy Manager):**
-    -   Admin Interface: `http://npm:81` (or use the Tailscale IP of the `ts-npm` container).
-    -   Default Login: `admin@example.com` / `changeme`.
-    -   Securely exposes services via HTTP/HTTPS on the `npm` Tailscale machine.
+    -   Admin Interface: `http://npm:81`
+    -   Default Login: `admin@example.com` / `changeme`
 
 -   **Pi-hole:**
-    -   Web Interface: `http://pihole/admin` (or `http://<ts-pihole-ip>/admin`).
-    -   **Note:** Pi-hole and NPM run on separate Tailscale "machines" (`pihole` and `npm`), so there are no port conflicts. Both can listen on port 80 of their respective private IPs.
+    -   Web Interface: `http://pihole/admin`
 
--   **Internal Communication:**
-    -   NPM can proxy to Pi-hole using the address `pihole` (port 80) since they share the same Docker network (`private_network`).
+-   **Open WebUI (AI Dashboard):**
+    -   Web Interface: `http://open-webui:8080`
+    -   Requires initial setup to create an admin account. Connected to Ollama automatically.
 
-To verify DNS:
+-   **Authelia (SSO & 2FA):**
+    -   Web Interface: `http://authelia:9091`
+    -   (Requires configuring `config/authelia/configuration.yml` with your users and policies first).
+
+-   **n8n (Workflow Automation):**
+    -   Web Interface: `http://n8n:5678`
+    -   Requires initial setup to create an admin account.
+
+-   **Ollama (AI Models):**
+    -   API Endpoint: `http://ollama:11434`
+    -   Verify models are pulled: `curl http://ollama:11434/api/tags`
+
+-   **Uptime Kuma (Monitoring):**
+    -   Web Interface: `http://uptime-kuma:3001`
+    -   Requires initial setup to create an admin account.
+
+To verify DNS via Unbound:
 ```bash
 dig @<TAILSCALE_IP> google.com
 ```
+
+## Tutorials: Connecting to the AI Stack
+
+Because your services are on a Tailscale network, you can securely connect your local tools directly to the remote AI models without exposing ports to the internet.
+
+### 1. Connecting VSCode (Continue Extension)
+The [Continue](https://continue.dev/) extension for VSCode allows you to use your remote Ollama instance as a coding assistant (like GitHub Copilot).
+
+1. Install the **Continue** extension in VSCode.
+2. Open the Continue settings (`~/.continue/config.json`).
+3. Add your remote Ollama instance to the `models` array using the Tailscale IP or MagicDNS name:
+   ```json
+   {
+     "models": [
+       {
+         "title": "Remote Qwen Coder",
+         "provider": "ollama",
+         "model": "qwen2.5-coder:7b",
+         "apiBase": "http://ollama:11434"
+       }
+     ]
+   }
+   ```
+
+### 2. Connecting Standalone Chat Clients
+You can use beautiful native apps like [Chatbox](https://chatboxai.app/) or [LobeChat](https://lobehub.com/) on your laptop/phone to talk to your models.
+
+1. Download and open the chat client.
+2. Go to Settings > Model Providers.
+3. Select **Ollama**.
+4. Set the API URL to: `http://ollama:11434` (or `http://<your-ollama-tailscale-ip>:11434`).
+5. The client will automatically fetch the available models (`llama3.1:8b`, `qwen2.5-coder:7b`, etc.).
+
+### 3. Integrating Ollama with n8n
+To build AI workflows in n8n using your local models:
+1. Open n8n (`http://n8n:5678`).
+2. Go to **Credentials** -> **Add Credential** -> Search for **Ollama API**.
+3. Set the **Base URL** to `http://ts-ollama:11434` (Note: we use `ts-ollama` because n8n uses Docker's internal network to reach the sidecar, which then forwards to Ollama).
 
 ## Maintenance
 
