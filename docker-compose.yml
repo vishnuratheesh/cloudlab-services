@@ -90,7 +90,7 @@ services:
       - ts-npm
 
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: postgres
     restart: unless-stopped
     environment:
@@ -185,6 +185,7 @@ services:
     image: curlimages/curl:latest
     container_name: ollama-pull-models
     restart: "no"
+    entrypoint: [""]
     networks:
       - private_network
     depends_on:
