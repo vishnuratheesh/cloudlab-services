@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: cloudlab
     steps:
       - uses: actions/checkout@v4
 
@@ -46,4 +47,7 @@ jobs:
           echo 'TAILSCALE_IP=${{ secrets.TAILSCALE_IP }}' > .env && \
           echo 'PIHOLE_PASSWORD=${{ secrets.PIHOLE_PASSWORD }}' >> .env && \
           echo 'TS_AUTHKEY=${{ secrets.TS_AUTHKEY }}' >> .env && \
+          echo 'AUTHELIA_JWT_SECRET=${{ secrets.AUTHELIA_JWT_SECRET }}' >> .env && \
+          echo 'AUTHELIA_SESSION_SECRET=${{ secrets.AUTHELIA_SESSION_SECRET }}' >> .env && \
+          echo 'AUTHELIA_ADMIN_PASSWORD_HASH=${{ secrets.AUTHELIA_ADMIN_PASSWORD_HASH }}' >> .env && \
           docker compose up -d --remove-orphans"

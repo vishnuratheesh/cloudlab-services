@@ -292,6 +292,9 @@ services:
       - ./config/authelia:/config
     environment:
       - TZ=UTC
+      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+      - AUTHELIA_ADMIN_PASSWORD_HASH=${AUTHELIA_ADMIN_PASSWORD_HASH}
     depends_on:
       - ts-authelia
 

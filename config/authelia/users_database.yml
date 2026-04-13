@@ -1,0 +1,8 @@
+users:
+  authelia:
+    displayname: "Authelia"
+    password: "{{ env \"AUTHELIA_ADMIN_PASSWORD_HASH\" }}"
+    email: authelia@example.com
+    groups:
+      - admins
+      - dev
