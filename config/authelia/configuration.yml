@@ -4,7 +4,7 @@
 
 theme: dark
 
-jwt_secret: a_very_important_secret
+jwt_secret: "{{ env \"AUTHELIA_JWT_SECRET\" | default \"a_very_important_secret\" }}"
 
 default_2fa_factor: totp
 
@@ -30,7 +30,7 @@ access_control:
 
 session:
   name: authelia_session
-  secret: unsecure_session_secret
+  secret: "{{ env \"AUTHELIA_SESSION_SECRET\" | default \"unsecure_session_secret\" }}"
   expiration: 3600
   inactivity: 300
   domain: example.com

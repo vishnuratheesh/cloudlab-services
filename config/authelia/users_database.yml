@@ -1,7 +1,7 @@
 users:
   authelia:
     displayname: "Authelia"
-    password: "$6$rounds=500000$jD2.rQYwQ/bJ9e/R$B8p1qgJb.K0JbJ.r9e/R.K0JbJ.rQYwQ/bJ9e/R.K0JbJ.rQYwQ/bJ9e/R.K0JbJ.rQYwQ/bJ9e/R."
+    password: "{{ env \"AUTHELIA_ADMIN_PASSWORD_HASH\" }}"
     email: authelia@example.com
     groups:
       - admins
