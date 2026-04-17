@@ -1,0 +1,9 @@
+use_default_settings: true
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "${SEARXNG_SECRET_KEY:-ultrasecretkey}" # Replace with a strong key in production via env var
+  base_url: false
+search:
+  safe_search: 0
+  autocomplete: "google"

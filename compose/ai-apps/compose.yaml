@@ -1,0 +1,96 @@
+services:
+  ts-open-webui:
+    image: tailscale/tailscale:latest
+    container_name: ts-open-webui
+    hostname: open-webui
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/open-webui:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    network_mode: service:ts-open-webui
+    environment:
+      - OLLAMA_BASE_URL=http://ts-litellm:4000
+      # Provide WEBUI_SECRET_KEY in an .env file or environment for production
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-default_insecure_secret}
+    volumes:
+      - ../../data/open-webui:/app/backend/data
+    depends_on:
+      - ts-open-webui
+
+  ts-searxng:
+    image: tailscale/tailscale:latest
+    container_name: ts-searxng
+    hostname: searxng
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/searxng:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    network_mode: service:ts-searxng
+    volumes:
+      - ../../config/searxng:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+    depends_on:
+      - ts-searxng
+
+  ts-flowise:
+    image: tailscale/tailscale:latest
+    container_name: ts-flowise
+    hostname: flowise
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/flowise:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  flowise:
+    image: flowiseai/flowise:latest
+    container_name: flowise
+    restart: unless-stopped
+    network_mode: service:ts-flowise
+    volumes:
+      - ../../data/flowise:/root/.flowise
+    environment:
+      - PORT=3000
+    depends_on:
+      - ts-flowise
+
+networks:
+  lab_network:
+    external: true
