@@ -17,6 +17,16 @@ services:
     networks:
       - lab_network
 
+  n8n-init:
+    image: busybox
+    container_name: n8n-init
+    user: root
+    command: chown -R 1000:1000 /home/node/.n8n
+    volumes:
+      - ../../data/n8n:/home/node/.n8n
+    depends_on:
+      - ts-n8n
+
   n8n:
     image: docker.n8n.io/n8nio/n8n
     container_name: n8n
@@ -39,7 +49,10 @@ services:
     volumes:
       - ../../data/n8n:/home/node/.n8n
     depends_on:
-      - ts-n8n
+      n8n-init:
+        condition: service_completed_successfully
+      ts-n8n:
+        condition: service_started
 
 networks:
   lab_network:
