@@ -1,0 +1,9 @@
+model_list:
+  - model_name: ollama/llama3.1:8b
+    litellm_params:
+      model: ollama/llama3.1:8b
+      api_base: "http://ts-ollama:11434"
+  - model_name: ollama/qwen2.5-coder:7b
+    litellm_params:
+      model: ollama/qwen2.5-coder:7b
+      api_base: "http://ts-ollama:11434"

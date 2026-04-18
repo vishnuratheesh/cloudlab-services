@@ -4,42 +4,50 @@ This repository contains the configuration for hosting a secure, private Home La
 
 ## Architecture
 
-All services are bound to the Tailscale IP of the host, shielding them from the public internet. We use a **Tailscale Sidecar** architecture, where each major service (or group of services) gets its own Tailscale IP (machine), preventing port conflicts and allowing for clean separation of concerns.
+The stack is designed with a **Layered Architecture** and uses a **Tailscale Sidecar** pattern. Every major service is accompanied by a Tailscale container, granting it a unique identity and IP on your private Tailnet. This shields all services from the public internet.
 
-### Core DNS & Proxy Layer
--   **Unbound:** Running as a recursive DNS resolver. It contacts root DNS servers directly rather than forwarding queries to upstream providers like Google or Cloudflare.
--   **Pi-hole:** Network-wide ad blocking. It uses the local Unbound container as its sole upstream DNS. Runs on the `pihole` Tailscale machine.
--   **Nginx Proxy Manager (NPM):** Provides a friendly UI for managing reverse proxies and SSL certificates. Runs on the `npm` Tailscale machine.
+The configuration is divided into logical layers (located in the `compose/` directory), which are connected via a shared external Docker network (`lab_network`).
 
-### AI & Automation Layer
--   **Ollama:** Local AI model serving. Pre-configured to pull models like `llama3.1:8b` and `qwen2.5-coder:7b`. Runs on the `ollama` Tailscale machine.
--   **Open WebUI:** A ChatGPT-like interface for interacting with the Ollama models. Supports RAG, voice, and user accounts. Runs on the `open-webui` Tailscale machine.
--   **n8n:** Workflow automation tool for integrating AI with other services. Runs on the `n8n` Tailscale machine.
--   **PostgreSQL (with pgvector):** Database backend for n8n, using `pgvector` for native AI memory and vector store capabilities.
+### 1. Network Layer (`compose/network`)
+-   **Unbound:** Recursive DNS resolver. Contacts root DNS servers directly.
+-   **Pi-hole:** Network-wide ad blocking. Uses local Unbound as its upstream DNS. Runs on the `pihole` Tailscale machine.
+-   **Nginx Proxy Manager (NPM):** Reverse proxy for exposing specific services to domains if necessary. Runs on the `npm` Tailscale machine.
+-   **Authelia:** SSO and 2FA authentication server. Runs on the `authelia` Tailscale machine.
 
-### Security & Monitoring Layer
--   **Authelia:** An open-source authentication server providing Single Sign-On (SSO) and Two-Factor Authentication (2FA). Integrates with Nginx Proxy Manager to protect exposed services. Runs on the `authelia` Tailscale machine.
--   **Uptime Kuma:** Self-hosted monitoring tool for tracking the uptime of services. Runs on the `uptime-kuma` Tailscale machine.
+### 2. Data Layer (`compose/data`)
+-   **PostgreSQL (with pgvector):** Database backend for n8n and vector store for AI memory.
+
+### 3. AI Core Layer (`compose/ai-core`)
+-   **Ollama:** Local AI model serving (`llama3.1:8b`, `qwen2.5-coder:7b`). Runs on the `ollama` Tailscale machine.
+-   **LiteLLM:** Unified API proxy to route requests to Ollama and track usage/costs. Runs on the `litellm` Tailscale machine.
+
+### 4. AI Apps Layer (`compose/ai-apps`)
+-   **Open WebUI:** ChatGPT-like interface for Ollama. Supports RAG, voice, and user accounts. Runs on the `open-webui` Tailscale machine.
+-   **SearxNG:** Privacy-respecting metasearch engine used by the AI to search the live web. Runs on the `searxng` Tailscale machine.
+-   **Flowise:** Visual UI builder for advanced AI agent logic and RAG workflows. Runs on the `flowise` Tailscale machine.
+
+### 5. Automation Layer (`compose/automation`)
+-   **n8n:** Workflow automation tool connecting apps and AI. Runs on the `n8n` Tailscale machine.
+
+### 6. Management Layer (`compose/management`)
+-   **Uptime Kuma:** Uptime tracking and alerts. Runs on the `uptime-kuma` Tailscale machine.
+-   **Dockge:** Web-based Docker Compose management console. Allows you to view logs, start/stop layers, and monitor the `compose/` directory live. Runs on the `dockge` Tailscale machine.
 
 ## Directory Structure
 
 ```
 .
-├── config/
-│   ├── unbound/       # Unbound configuration files
-│   ├── pihole/        # Placeholders for mapped config volumes
-│   ├── npm/           # Placeholders for mapped config volumes
-│   └── authelia/      # Authelia configuration files
-├── data/
-│   ├── pihole/        # Persistent data for Pi-hole
-│   ├── npm/           # Persistent data for NPM
-│   ├── n8n/           # Persistent data for n8n
-│   ├── ollama/        # Persistent data for Ollama models
-│   ├── postgres/      # Persistent data for PostgreSQL
-│   ├── uptime-kuma/   # Persistent data for Uptime Kuma
-│   └── open-webui/    # Persistent data for Open WebUI
-├── .github/workflows/ # CD Pipeline
-└── docker-compose.yml # Service definitions
+├── compose/           # Segmented Docker Compose layers
+│   ├── network/
+│   ├── data/
+│   ├── ai-core/
+│   ├── ai-apps/
+│   ├── automation/
+│   └── management/
+├── config/            # Static configuration files (Unbound, Authelia, LiteLLM, SearxNG)
+├── data/              # Persistent volumes (Ignored in Git, preserved during deployment)
+├── docs/              # Markdown Wiki and Roadmap documentation
+└── .github/workflows/ # CD Pipeline
 ```
 
 ## Setup & Deployment
@@ -106,8 +114,8 @@ Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets 
 Push to the `main` branch. The workflow will:
 1.  Join the Tailscale network (as `tag:ci`).
 2.  Connect to your server via SSH over the private tunnel.
-3.  Clean up old config (`rm -rf config docker-compose.yml`) in `/lab/docker/cloudlab` while preserving `data/`.
-4.  Deploy the new configuration and restart services.
+3.  Clean up old config (`rm -rf config docker-compose.yml compose`) in `/lab/docker/cloudlab` while preserving `data/`.
+4.  Deploy the new configuration and restart all stacks in logical order.
 
 ### 5. Verification
 
@@ -139,6 +147,19 @@ After deployment, connect to your Tailscale network on your local machine. You c
 -   **Uptime Kuma (Monitoring):**
     -   Web Interface: `http://uptime-kuma:3001`
     -   Requires initial setup to create an admin account.
+
+-   **Dockge (Management Console):**
+    -   Web Interface: `http://dockge:5001`
+    -   Requires initial setup to create an admin account. Allows managing the `compose/` stacks.
+
+-   **LiteLLM (AI Proxy):**
+    -   API Endpoint: `http://litellm:4000`
+
+-   **SearxNG (Web Search):**
+    -   Web Interface: `http://searxng:8080`
+
+-   **Flowise (AI Logic Builder):**
+    -   Web Interface: `http://flowise:3000`
 
 To verify DNS via Unbound:
 ```bash
@@ -185,8 +206,8 @@ To build AI workflows in n8n using your local models:
 
 ## Maintenance
 
--   **Configuration Changes:** Edit `config/unbound/unbound.conf` locally and push to GitHub. The pipeline will update the file and restart containers.
--   **Updates:** The `docker-compose.yml` uses `latest` tags. Restarting the stack (or re-running the pipeline) will pull new images if available.
+-   **Configuration Changes:** Edit `compose/<layer>/compose.yaml` or files in `config/` locally and push to GitHub. The pipeline will update the files and restart containers.
+-   **Updates:** The `compose.yaml` files use `latest` tags. Restarting the stack via Dockge or re-running the pipeline will pull new images if available.
 
 ## Troubleshooting
 

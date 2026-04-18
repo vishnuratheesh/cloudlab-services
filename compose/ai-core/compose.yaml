@@ -1,0 +1,93 @@
+services:
+  ts-ollama:
+    image: tailscale/tailscale:latest
+    container_name: ts-ollama
+    hostname: ollama
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/ollama:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    network_mode: service:ts-ollama
+    volumes:
+      - ../../data/ollama:/root/.ollama
+    depends_on:
+      - ts-ollama
+    # Add deploy block to easily enable GPU in the future
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  ollama-pull-models:
+    image: curlimages/curl:latest
+    container_name: ollama-pull-models
+    restart: "no"
+    entrypoint: [""]
+    networks:
+      - lab_network
+    depends_on:
+      ts-ollama:
+        condition: service_started
+      ollama:
+        condition: service_started
+    command: >
+      sh -c "
+      echo 'Waiting for Ollama to be available...' &&
+      while ! curl -s http://ts-ollama:11434/api/tags >/dev/null; do sleep 5; done &&
+      echo 'Ollama is up! Pulling llama3.1:8b...' &&
+      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"llama3.1:8b\"}' &&
+      echo 'Pulling qwen2.5-coder:7b...' &&
+      curl -s -X POST http://ts-ollama:11434/api/pull -d '{\"name\": \"qwen2.5-coder:7b\"}' &&
+      echo 'Done!'"
+
+  ts-litellm:
+    image: tailscale/tailscale:latest
+    container_name: ts-litellm
+    hostname: litellm
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/litellm:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    restart: unless-stopped
+    network_mode: service:ts-litellm
+    volumes:
+      - ../../config/litellm:/app/config
+    command:
+      - "--config=/app/config/config.yaml"
+      - "--port=4000"
+    depends_on:
+      - ts-litellm
+
+networks:
+  lab_network:
+    external: true

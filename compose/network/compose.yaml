@@ -1,0 +1,127 @@
+services:
+  unbound:
+    image: klutchell/unbound:latest
+    container_name: unbound
+    restart: unless-stopped
+    hostname: unbound
+    volumes:
+      - ../../config/unbound/unbound.conf:/etc/unbound/unbound.conf:ro
+    networks:
+      - lab_network
+
+  ts-pihole:
+    image: tailscale/tailscale:latest
+    container_name: ts-pihole
+    restart: unless-stopped
+    hostname: pihole
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      # We disable Tailscale DNS so the container uses Docker DNS to resolve 'unbound'
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/pihole:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # Expose port 53 to host for LAN devices (e.g. Home Router)
+      - "53:53/tcp"
+      - "53:53/udp"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    # No ports exposed directly; traffic comes via ts-pihole
+    network_mode: service:ts-pihole
+    environment:
+      TZ: 'UTC'
+      # Point to the unbound container
+      PIHOLE_DNS: 'unbound#53'
+      # WEBPASSWORD should be set via environment variable or .env file for security
+      WEBPASSWORD: ${PIHOLE_PASSWORD:-admin}
+    volumes:
+      - ../../data/pihole:/etc/pihole
+      - ../../data/pihole_dnsmasq:/etc/dnsmasq.d
+      - ../../config/pihole/02-tailscale.conf:/etc/dnsmasq.d/02-tailscale.conf:ro
+    depends_on:
+      - unbound
+      - ts-pihole
+
+  ts-npm:
+    image: tailscale/tailscale:latest
+    container_name: ts-npm
+    hostname: npm
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      # Explicitly accepting DNS might be useful if NPM needs to resolve things via MagicDNS
+      - TS_EXTRA_ARGS=--accept-dns=true
+    volumes:
+      - ../../data/tailscale/npm:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: npm
+    restart: unless-stopped
+    network_mode: service:ts-npm
+    environment:
+      # NPM uses SQLite by default if DB params aren't provided, which is fine for this scale
+      DISABLE_IPV6: 'true'
+    volumes:
+      - ../../data/npm:/data
+      - ../../data/npm/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - ts-npm
+
+  ts-authelia:
+    image: tailscale/tailscale:latest
+    container_name: ts-authelia
+    hostname: authelia
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns=false
+    volumes:
+      - ../../data/tailscale/authelia:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - lab_network
+
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    network_mode: service:ts-authelia
+    volumes:
+      - ../../config/authelia:/config
+    environment:
+      - TZ=UTC
+      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
+      - AUTHELIA_ADMIN_PASSWORD_HASH=${AUTHELIA_ADMIN_PASSWORD_HASH}
+    depends_on:
+      - ts-authelia
+
+networks:
+  lab_network:
+    external: true
