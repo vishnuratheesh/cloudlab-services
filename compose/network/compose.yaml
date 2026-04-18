@@ -114,6 +114,7 @@ services:
     network_mode: service:ts-authelia
     volumes:
       - ../../config/authelia:/config
+      - ../../data/authelia:/data
     environment:
       - TZ=UTC
       - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET}
