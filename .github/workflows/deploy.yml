@@ -55,6 +55,7 @@ jobs:
           echo 'AUTHELIA_JWT_SECRET=${{ secrets.AUTHELIA_JWT_SECRET }}' >> .env && \
           echo 'AUTHELIA_SESSION_SECRET=${{ secrets.AUTHELIA_SESSION_SECRET }}' >> .env && \
           echo 'AUTHELIA_ADMIN_PASSWORD_HASH=${{ secrets.AUTHELIA_ADMIN_PASSWORD_HASH }}' >> .env && \
+          echo 'AUTHELIA_STORAGE_ENCRYPTION_KEY=${{ secrets.AUTHELIA_STORAGE_ENCRYPTION_KEY }}' >> .env && \
           echo 'WEBUI_SECRET_KEY=${{ secrets.WEBUI_SECRET_KEY }}' >> .env && \
           docker network create lab_network || true && \
           for layer in network data ai-core ai-apps automation management; do \

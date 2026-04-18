@@ -1,6 +1,6 @@
 services:
   ts-uptime-kuma:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-uptime-kuma
     hostname: uptime-kuma
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
       - lab_network
 
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:1.23.13
     container_name: uptime-kuma
     restart: unless-stopped
     network_mode: service:ts-uptime-kuma
@@ -28,7 +28,7 @@ services:
       - ts-uptime-kuma
 
   ts-dockge:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-dockge
     hostname: dockge
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
       - lab_network
 
   dockge:
-    image: louislam/dockge:1
+    image: louislam/dockge:1.4.2
     restart: unless-stopped
     container_name: dockge
     network_mode: service:ts-dockge

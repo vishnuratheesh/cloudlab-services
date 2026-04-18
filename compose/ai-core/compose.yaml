@@ -1,6 +1,6 @@
 services:
   ts-ollama:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-ollama
     hostname: ollama
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
       - lab_network
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.1.32
     container_name: ollama
     restart: unless-stopped
     network_mode: service:ts-ollama
@@ -36,7 +36,7 @@ services:
     #           capabilities: [gpu]
 
   ollama-pull-models:
-    image: curlimages/curl:latest
+    image: curlimages/curl:8.7.1
     container_name: ollama-pull-models
     restart: "no"
     entrypoint: [""]
@@ -58,7 +58,7 @@ services:
       echo 'Done!'"
 
   ts-litellm:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-litellm
     hostname: litellm
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
       - lab_network
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: ghcr.io/berriai/litellm:v1.35.33
     container_name: litellm
     restart: unless-stopped
     network_mode: service:ts-litellm
