@@ -1,6 +1,20 @@
 # Home Lab Stack: DNS, AI Automation & Monitoring
 
+[![Deploy to Cloudlab](https://github.com/vishnuratheesh/cloudlab-services/actions/workflows/deploy.yml/badge.svg)](https://github.com/vishnuratheesh/cloudlab-services/actions/workflows/deploy.yml)
+
 This repository contains the configuration for hosting a secure, private Home Lab stack on a cloud instance (VPS), utilizing Tailscale for network isolation. The stack includes a DNS/Proxy layer, an AI automation layer, and system monitoring.
+
+## Tech Stack
+
+![Tailscale](https://img.shields.io/badge/Tailscale-FFFFFF?style=for-the-badge&logo=Tailscale&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Authelia](https://img.shields.io/badge/Authelia-1A2C37?style=for-the-badge&logo=authelia&logoColor=white)
+![Nginx Proxy Manager](https://img.shields.io/badge/Nginx_Proxy_Manager-009639?style=for-the-badge&logo=nginx&logoColor=white)
+![Pi-Hole](https://img.shields.io/badge/Pi--Hole-F50D30?style=for-the-badge&logo=pi-hole&logoColor=white)
+![n8n](https://img.shields.io/badge/n8n-FF6C37?style=for-the-badge&logo=n8n&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-FFFFFF?style=for-the-badge&logo=Ollama&logoColor=black)
 
 ## Architecture
 
@@ -94,20 +108,25 @@ sudo mkdir -p /lab/docker
 sudo chown -R <username>:<username> /lab/docker
 ```
 
-### 3. GitHub Secrets
+### 3. GitHub Secrets (Keys to Set)
 
-Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets and variables` -> `Actions`):
+Add the following **Secrets** to your GitHub repository (`Settings` -> `Secrets and variables` -> `Actions`). The pipeline will not deploy without these properly set.
 
-| Secret Name       | Description                                                                 |
-| ----------------- | --------------------------------------------------------------------------- |
-| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID (Description: "GitHub Actions", Tag: `tag:ci`). |
-| `TS_OAUTH_SECRET` | Tailscale OAuth Client Secret.                                              |
-| `SSH_HOST`        | The **Tailscale IP address** of your server (e.g., `100.x.y.z`).            |
-| `SSH_USERNAME`    | The SSH username (e.g., `sysadmin` or `ubuntu`).                            |
-| `SSH_PRIVATE_KEY` | Your private SSH key (PEM format) used to access the instance.              |
-| `TS_AUTHKEY`      | **Required**. A **Reusable** Tailscale Auth Key (Tags: `tag:server` recommended). |
-| `TAILSCALE_IP`    | The Tailscale IP address of your server instance (e.g., `100.x.y.z`).       |
-| `PIHOLE_PASSWORD` | (Optional) Password for the Pi-hole Web Interface. Defaults to `admin`.     |
+| Secret Name | Description | How to Generate / Where to Get |
+| :--- | :--- | :--- |
+| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID (Tag: `tag:ci`). | Tailscale Admin Console -> Settings -> OAuth clients. Create one for "GitHub Actions". |
+| `TS_OAUTH_SECRET` | Tailscale OAuth Client Secret. | Generated along with the OAuth Client ID above. |
+| `TS_AUTHKEY` | **Required**. A **Reusable** Tailscale Auth Key. | Tailscale Admin Console -> Settings -> Keys. Generate a "Reusable" key. **Important:** Copy the string starting with `tskey-auth-` immediately. Do *not* use the Key ID (e.g., `k31Uz...`). |
+| `TAILSCALE_IP` | The **Tailscale IP address** of your server. | Look for your server's 100.x.y.z IP in the Tailscale Admin Console. |
+| `SSH_HOST` | The server's Tailscale IP address. | Same as `TAILSCALE_IP` (e.g., `100.x.y.z`). |
+| `SSH_USERNAME` | The SSH username for the server deployment user. | E.g., `sysadmin` or `ubuntu` depending on your OS. |
+| `SSH_PRIVATE_KEY` | Your private SSH key (PEM format). | Generate via `ssh-keygen -t ed25519` on your local machine and copy the private part. Add the public part to the server's `~/.ssh/authorized_keys`. |
+| `PIHOLE_PASSWORD` | Password for the Pi-hole Web Interface. | Any secure password. Defaults to `admin` if not provided. |
+| `AUTHELIA_JWT_SECRET` | Secret for Authelia JWT tokens. | Run `openssl rand -hex 64` in your terminal. |
+| `AUTHELIA_SESSION_SECRET` | Secret for Authelia Session cookies. | Run `openssl rand -hex 64` in your terminal. |
+| `AUTHELIA_STORAGE_ENCRYPTION_KEY`| Secret for Authelia local DB encryption. | Run `openssl rand -hex 64` in your terminal. |
+| `AUTHELIA_ADMIN_PASSWORD_HASH`| Argon2 hash for your Authelia Admin. | Run: `docker run authelia/authelia:4.38.8 authelia crypto hash generate argon2 --password 'YOUR_PASSWORD'` |
+| `WEBUI_SECRET_KEY` | Secret Key for Open WebUI sessions. | Run `openssl rand -hex 32` in your terminal. |
 
 ### 4. Deployment
 
