@@ -1,4 +1,4 @@
-# Home Lab Stack: DNS, AI Automation & Monitoring
+# Cloud Lab Stack: DNS, AI Automation & Monitoring
 
 [![Deploy to Cloudlab](https://github.com/vishnuratheesh/cloudlab-services/actions/workflows/deploy.yml/badge.svg)](https://github.com/vishnuratheesh/cloudlab-services/actions/workflows/deploy.yml)
 
