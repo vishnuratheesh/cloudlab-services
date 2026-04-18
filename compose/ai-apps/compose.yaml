@@ -50,7 +50,7 @@ services:
       - lab_network
 
   searxng:
-    image: searxng/searxng:20240417
+    image: searxng/searxng:latest
     container_name: searxng
     restart: unless-stopped
     network_mode: service:ts-searxng
