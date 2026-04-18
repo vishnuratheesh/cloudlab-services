@@ -1,6 +1,6 @@
 services:
   ts-n8n:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-n8n
     hostname: n8n
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
       - lab_network
 
   n8n-init:
-    image: busybox
+    image: busybox:1.36.1
     container_name: n8n-init
     user: root
     command: chown -R 1000:1000 /home/node/.n8n
@@ -28,7 +28,7 @@ services:
       - ts-n8n
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: docker.n8n.io/n8nio/n8n:1.36.1
     container_name: n8n
     restart: unless-stopped
     network_mode: service:ts-n8n

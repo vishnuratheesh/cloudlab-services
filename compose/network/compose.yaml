@@ -1,6 +1,6 @@
 services:
   unbound:
-    image: klutchell/unbound:latest
+    image: klutchell/unbound:1.19.3
     container_name: unbound
     restart: unless-stopped
     hostname: unbound
@@ -10,7 +10,7 @@ services:
       - lab_network
 
   ts-pihole:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-pihole
     restart: unless-stopped
     hostname: pihole
@@ -34,7 +34,7 @@ services:
 
   pihole:
     container_name: pihole
-    image: pihole/pihole:latest
+    image: pihole/pihole:2024.03.2
     restart: unless-stopped
     # No ports exposed directly; traffic comes via ts-pihole
     network_mode: service:ts-pihole
@@ -53,7 +53,7 @@ services:
       - ts-pihole
 
   ts-npm:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-npm
     hostname: npm
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
       - lab_network
 
   npm:
-    image: 'jc21/nginx-proxy-manager:latest'
+    image: 'jc21/nginx-proxy-manager:2.11.2'
     container_name: npm
     restart: unless-stopped
     network_mode: service:ts-npm
@@ -90,7 +90,7 @@ services:
       - ts-npm
 
   ts-authelia:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-authelia
     hostname: authelia
     restart: unless-stopped
@@ -108,7 +108,7 @@ services:
       - lab_network
 
   authelia:
-    image: authelia/authelia:latest
+    image: authelia/authelia:4.38.8
     container_name: authelia
     restart: unless-stopped
     network_mode: service:ts-authelia

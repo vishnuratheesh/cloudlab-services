@@ -1,6 +1,6 @@
 services:
   ts-open-webui:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-open-webui
     hostname: open-webui
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
       - lab_network
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:v0.1.125
     container_name: open-webui
     restart: unless-stopped
     network_mode: service:ts-open-webui
@@ -32,7 +32,7 @@ services:
       - ts-open-webui
 
   ts-searxng:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-searxng
     hostname: searxng
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
       - lab_network
 
   searxng:
-    image: searxng/searxng:latest
+    image: searxng/searxng:20240417
     container_name: searxng
     restart: unless-stopped
     network_mode: service:ts-searxng
@@ -62,7 +62,7 @@ services:
       - ts-searxng
 
   ts-flowise:
-    image: tailscale/tailscale:latest
+    image: tailscale/tailscale:v1.64.0
     container_name: ts-flowise
     hostname: flowise
     restart: unless-stopped
@@ -80,7 +80,7 @@ services:
       - lab_network
 
   flowise:
-    image: flowiseai/flowise:latest
+    image: flowiseai/flowise:2.0.1
     container_name: flowise
     restart: unless-stopped
     network_mode: service:ts-flowise
