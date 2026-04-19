@@ -185,6 +185,72 @@ To verify DNS via Unbound:
 dig @<TAILSCALE_IP> google.com
 ```
 
+
+### Post-Deployment Service Setup Guide
+
+Now that your infrastructure is deployed and running securely over Tailscale, it’s time to perform the initial setup for each service. Follow these steps to configure your newly deployed lab.
+
+#### 1. Nginx Proxy Manager (NPM)
+NPM is your gateway for routing traffic via reverse proxy. While you may be using Tailscale primarily, NPM is useful if you expose services or just want internal domain routing.
+1. **Access the Admin Panel**: Navigate to `http://npm:81` in your browser.
+2. **Initial Login**: Use the default credentials:
+   - **Email**: `admin@example.com`
+   - **Password**: `changeme`
+3. **Change Credentials**: Immediately upon login, you will be prompted to update the admin email and create a new, secure password.
+4. **Add a Proxy Host** (Optional): Click "Proxy Hosts" > "Add Proxy Host" to route domains to your internal containers.
+
+#### 2. Pi-hole
+Pi-hole acts as your network-wide ad blocker and local DNS resolver.
+1. **Access the Web Interface**: Navigate to `http://pihole/admin` (or `https://pihole.<your-tailnet>.ts.net/admin` if you configured Tailscale HTTPS).
+2. **Login**: Click "Login" on the left sidebar. Use the password you set in your `PIHOLE_PASSWORD` GitHub secret. If you didn't set one, it defaults to `admin`.
+3. **Set Up Upstream DNS**: Go to **Settings > DNS**. Unbound is pre-configured as your custom upstream (`unbound#53`). Ensure this is selected and the standard upstream providers (like Google or Cloudflare) are unchecked.
+4. **Update Adlists**: Go to **Adlists** on the left menu, ensure the default list is active, and click **Tools > Update Gravity** to pull the latest blocklists.
+
+#### 3. Authelia (SSO & 2FA)
+Authelia provides Single Sign-On and Two-Factor Authentication for your services. You manage users via a configuration file.
+1. **Create an Admin Password Hash**: On your local machine (with Docker installed), generate an Argon2 hash for your admin password:
+   ```bash
+   docker run authelia/authelia:4.38.8 authelia crypto hash generate argon2 --password 'your_strong_password'
+   ```
+2. **Add Users**: Your users are managed in `data/authelia/users_database.yml` (and some config in `config/authelia/configuration.yml`). Edit `data/authelia/users_database.yml` on the server or via your local codebase (and push via CI). Example of a user entry:
+   ```yaml
+   users:
+     yourusername:
+       displayname: "Your Name"
+       # Paste the hash generated in Step 1 here:
+       password: "$argon2id$v=19$m=65536,t=3,p=4$..."
+       email: you@example.com
+       groups:
+         - admins
+         - dev
+   ```
+3. **Access Authelia**: Navigate to `http://authelia:9091` and log in with the credentials you just configured to register your first 2FA device (like a YubiKey or Authenticator App).
+
+#### 4. Open WebUI (AI Dashboard)
+Open WebUI is your frontend for interacting with Ollama and other AI models.
+1. **Access the Interface**: Navigate to `http://open-webui:8080`.
+2. **Create Admin Account**: The first account registered automatically becomes the Administrator. Click "Sign Up", enter your name, email, and a secure password.
+3. **Verify Ollama Connection**: Go to **Settings (gear icon) > Connections**. Verify that the Ollama URL is set to `http://ollama:11434` and shows as connected. You can pull models directly from this UI.
+
+#### 5. n8n (Workflow Automation)
+n8n allows you to build powerful automation workflows, connecting your AI models with external APIs.
+1. **Access the Interface**: Navigate to `http://n8n:5678`.
+2. **Initial Setup**: You will be prompted to create an owner account. Enter your details and set up your initial workspace.
+3. **Connect to Local AI**: To use Ollama in your workflows, add an **Ollama** credential in n8n and set the Base URL to `http://ts-ollama:11434` (using the sidecar's Docker network name).
+
+#### 6. Uptime Kuma (Monitoring)
+Uptime Kuma monitors the health of your infrastructure.
+1. **Access the Dashboard**: Navigate to `http://uptime-kuma:3001`.
+2. **Create Admin Account**: On your first visit, you must create an admin username and password.
+3. **Add a Monitor**: Click "Add New Monitor". Set the type to "HTTP(s)", name it (e.g., "Open WebUI"), and set the URL to `http://open-webui:8080`. Set the heartbeat interval to check if your services are healthy!
+
+#### 7. Dockge (Compose Management)
+Dockge provides a web UI to manage your Docker Compose stacks.
+1. **Access the Console**: Navigate to `http://dockge:5001`.
+2. **Initial Setup**: Create your admin account on the welcome screen.
+3. **Manage Stacks**: You will see your layered compose files (e.g., `network`, `ai-core`). You can view live logs, restart containers, or monitor resource usage directly from this UI. *(Note: While you can edit compose files here, remember that your GitHub repository is the single source of truth for deployments!)*
+
+
 ## Tutorials: Connecting to the AI Stack
 
 Because your services are on a Tailscale network, you can securely connect your local tools directly to the remote AI models without exposing ports to the internet.
