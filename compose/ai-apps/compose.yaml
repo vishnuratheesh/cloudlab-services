@@ -21,7 +21,7 @@ services:
     image: busybox:1.36.1
     container_name: open-webui-init
     user: root
-    command: chown -R 1000:1000 /app/backend/data
+    command: sh -c "touch /app/backend/data/favicon.png && chown -R 1000:1000 /app/backend/data"
     volumes:
       - ../../data/open-webui:/app/backend/data
     depends_on:
@@ -39,6 +39,7 @@ services:
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-default_insecure_secret}
     volumes:
       - ../../data/open-webui:/app/backend/data
+      - ../../data/open-webui/favicon.png:/app/backend/static/favicon.png
     depends_on:
       open-webui-init:
         condition: service_completed_successfully

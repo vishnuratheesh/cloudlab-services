@@ -33,6 +33,7 @@ services:
     restart: unless-stopped
     network_mode: service:ts-uptime-kuma
     user: "1000:1000"
+    entrypoint: ["/usr/bin/dumb-init", "--", "node", "server/server.js"]
     volumes:
       - ../../data/uptime-kuma:/app/data
     depends_on:
