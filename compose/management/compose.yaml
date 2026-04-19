@@ -17,15 +17,29 @@ services:
     networks:
       - lab_network
 
+  uptime-kuma-init:
+    image: busybox:1.36.1
+    container_name: uptime-kuma-init
+    user: root
+    command: chown -R 1000:1000 /app/data
+    volumes:
+      - ../../data/uptime-kuma:/app/data
+    depends_on:
+      - ts-uptime-kuma
+
   uptime-kuma:
     image: louislam/uptime-kuma:1.23.13
     container_name: uptime-kuma
     restart: unless-stopped
     network_mode: service:ts-uptime-kuma
+    user: "1000:1000"
     volumes:
       - ../../data/uptime-kuma:/app/data
     depends_on:
-      - ts-uptime-kuma
+      uptime-kuma-init:
+        condition: service_completed_successfully
+      ts-uptime-kuma:
+        condition: service_started
 
   ts-dockge:
     image: tailscale/tailscale:v1.64.0
@@ -45,11 +59,22 @@ services:
     networks:
       - lab_network
 
+  dockge-init:
+    image: busybox:1.36.1
+    container_name: dockge-init
+    user: root
+    command: chown -R 1000:1000 /app/data
+    volumes:
+      - ../../data/dockge:/app/data
+    depends_on:
+      - ts-dockge
+
   dockge:
     image: louislam/dockge:1.4.2
     restart: unless-stopped
     container_name: dockge
     network_mode: service:ts-dockge
+    user: "1000:1000"
     environment:
       - DOCKGE_STACKS_DIR=/lab/docker/cloudlab/compose
     volumes:
@@ -57,7 +82,10 @@ services:
       - ../../data/dockge:/app/data
       - ../../compose:/lab/docker/cloudlab/compose
     depends_on:
-      - ts-dockge
+      dockge-init:
+        condition: service_completed_successfully
+      ts-dockge:
+        condition: service_started
 
 networks:
   lab_network:

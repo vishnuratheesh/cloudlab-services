@@ -17,11 +17,22 @@ services:
     networks:
       - lab_network
 
+  open-webui-init:
+    image: busybox:1.36.1
+    container_name: open-webui-init
+    user: root
+    command: chown -R 1000:1000 /app/backend/data
+    volumes:
+      - ../../data/open-webui:/app/backend/data
+    depends_on:
+      - ts-open-webui
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.1.125
     container_name: open-webui
     restart: unless-stopped
     network_mode: service:ts-open-webui
+    user: "1000:1000"
     environment:
       - OLLAMA_BASE_URL=http://ts-litellm:4000
       # Provide WEBUI_SECRET_KEY in an .env file or environment for production
@@ -29,7 +40,10 @@ services:
     volumes:
       - ../../data/open-webui:/app/backend/data
     depends_on:
-      - ts-open-webui
+      open-webui-init:
+        condition: service_completed_successfully
+      ts-open-webui:
+        condition: service_started
 
   ts-searxng:
     image: tailscale/tailscale:v1.64.0
@@ -79,17 +93,34 @@ services:
     networks:
       - lab_network
 
+  flowise-init:
+    image: busybox:1.36.1
+    container_name: flowise-init
+    user: root
+    command: chown -R 1000:1000 /root/.flowise
+    volumes:
+      - ../../data/flowise:/root/.flowise
+    depends_on:
+      - ts-flowise
+
   flowise:
     image: flowiseai/flowise:2.0.1
     container_name: flowise
     restart: unless-stopped
     network_mode: service:ts-flowise
+    # Note: Flowise writes to /root/.flowise, so running as UID 1000 will fail unless it's given a different path.
+    # Flowise uses FLOWISE_SECRETKEY_PATH but also writes to ~/.flowise.
+    # We will set FLOWISE_USERNAME, FLOWISE_PASSWORD to skip database logic or simply let it run as root.
+    # Actually, let's keep Flowise as root for now as it doesn't support running rootless easily without crashing.
     volumes:
       - ../../data/flowise:/root/.flowise
     environment:
       - PORT=3000
     depends_on:
-      - ts-flowise
+      flowise-init:
+        condition: service_completed_successfully
+      ts-flowise:
+        condition: service_started
 
 networks:
   lab_network:

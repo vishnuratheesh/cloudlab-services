@@ -75,18 +75,32 @@ services:
     networks:
       - lab_network
 
+  litellm-init:
+    image: busybox:1.36.1
+    container_name: litellm-init
+    user: root
+    command: chown -R 1000:1000 /app/config
+    volumes:
+      - ../../config/litellm:/app/config
+    depends_on:
+      - ts-litellm
+
   litellm:
     image: litellm/litellm:main-v1.83.3-stable
     container_name: litellm
     restart: unless-stopped
     network_mode: service:ts-litellm
+    user: "1000:1000"
     volumes:
       - ../../config/litellm:/app/config
     command:
       - "--config=/app/config/config.yaml"
       - "--port=4000"
     depends_on:
-      - ts-litellm
+      litellm-init:
+        condition: service_completed_successfully
+      ts-litellm:
+        condition: service_started
 
 networks:
   lab_network:

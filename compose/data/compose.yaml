@@ -1,8 +1,17 @@
 services:
+  postgres-init:
+    image: busybox:1.36.1
+    container_name: postgres-init
+    user: root
+    command: chown -R 1000:1000 /var/lib/postgresql/data
+    volumes:
+      - ../../data/postgres:/var/lib/postgresql/data
+
   postgres:
     image: pgvector/pgvector:pg16
     container_name: postgres
     restart: unless-stopped
+    user: "1000:1000"
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-n8n}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-n8n}
@@ -12,6 +21,9 @@ services:
       - ../../data/postgres:/var/lib/postgresql/data
     networks:
       - lab_network
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
 
 networks:
   lab_network:
