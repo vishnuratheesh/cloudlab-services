@@ -107,11 +107,23 @@ services:
     networks:
       - lab_network
 
+  authelia-init:
+    image: busybox:1.36.1
+    container_name: authelia-init
+    user: root
+    command: chown -R 1000:1000 /config /data
+    volumes:
+      - ../../config/authelia:/config
+      - ../../data/authelia:/data
+    depends_on:
+      - ts-authelia
+
   authelia:
     image: authelia/authelia:4.38.8
     container_name: authelia
     restart: unless-stopped
     network_mode: service:ts-authelia
+    user: "1000:1000"
     volumes:
       - ../../config/authelia:/config
       - ../../data/authelia:/data
@@ -121,7 +133,10 @@ services:
       - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET}
       - AUTHELIA_ADMIN_PASSWORD_HASH=${AUTHELIA_ADMIN_PASSWORD_HASH}
     depends_on:
-      - ts-authelia
+      authelia-init:
+        condition: service_completed_successfully
+      ts-authelia:
+        condition: service_started
 
 networks:
   lab_network:
