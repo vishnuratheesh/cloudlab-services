@@ -42,8 +42,12 @@ jobs:
           scp /tmp/deploy.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/lab/docker/cloudlab/deploy.tar.gz
           # Extract on server. First gracefully bring down legacy monolithic stack if it exists to avoid container conflicts.
           # Then clean compose dir and legacy docker-compose.yml, preserving data and config.
+          # We use a temporary container to chown the config directory back to the deployment user
+          # before extracting, to prevent 'tar: Cannot open: File exists' permission errors
+          # caused by root-owned or 1000:1000-owned files.
           ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "cd /lab/docker/cloudlab && \
           if [ -f docker-compose.yml ]; then docker compose down; fi && \
+          docker run --rm -v \$(pwd):/workdir busybox:1.36.1 chown -R \$(id -u):\$(id -g) /workdir/config || true && \
           rm -rf docker-compose.yml compose && tar -xzf deploy.tar.gz && rm deploy.tar.gz"
 
       - name: Create .env file and Deploy Stacks
