@@ -42,6 +42,7 @@ The configuration is divided into logical layers (located in the `compose/` dire
 
 ### 5. Automation Layer (`compose/automation`)
 -   **n8n:** Workflow automation tool connecting apps and AI. Runs on the `n8n` Tailscale machine.
+-   **OpenCode:** Open-source AI coding agent. Integrates with n8n via a shared workspace and uses local Ollama models. Runs on the internal Docker network.
 
 ### 6. Management Layer (`compose/management`)
 -   **Uptime Kuma:** Uptime tracking and alerts. Runs on the `uptime-kuma` Tailscale machine.
@@ -222,6 +223,11 @@ To build AI workflows in n8n using your local models:
 1. Open n8n (`http://n8n:5678`).
 2. Go to **Credentials** -> **Add Credential** -> Search for **Ollama API**.
 3. Set the **Base URL** to `http://ts-ollama:11434` (Note: we use `ts-ollama` because n8n uses Docker's internal network to reach the sidecar, which then forwards to Ollama).
+
+### 4. Integrating OpenCode with n8n
+The stack includes **OpenCode**, an open-source AI coding agent.
+1. OpenCode is configured to use the local Ollama instance (`qwen2.5-coder:7b`) and shares a workspace (`/workspace`) with `n8n`.
+2. `n8n` can spin up workflows that execute OpenCode inside its container to write applications, and then `n8n` can manage pushing those files from the shared workspace to a Git repository to trigger deployments.
 
 ## Maintenance
 
