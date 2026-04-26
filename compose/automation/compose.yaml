@@ -21,9 +21,10 @@ services:
     image: busybox:1.36.1
     container_name: n8n-init
     user: root
-    command: chown -R 1000:1000 /home/node/.n8n
+    command: chown -R 1000:1000 /home/node/.n8n /workspace
     volumes:
       - ../../data/n8n:/home/node/.n8n
+      - ../../data/shared-workspace:/workspace
     depends_on:
       - ts-n8n
 
@@ -48,11 +49,24 @@ services:
       - GENERIC_TIMEZONE=UTC
     volumes:
       - ../../data/n8n:/home/node/.n8n
+      - ../../data/shared-workspace:/workspace
     depends_on:
       n8n-init:
         condition: service_completed_successfully
       ts-n8n:
         condition: service_started
+
+  opencode:
+    image: ghcr.io/anomalyco/opencode:1.0.196
+    container_name: opencode
+    restart: unless-stopped
+    command: ["opencode", "serve", "--hostname", "0.0.0.0"]
+    user: "1000:1000"
+    volumes:
+      - ../../config/opencode/opencode.json:/home/opencode/.config/opencode/opencode.json
+      - ../../data/shared-workspace:/workspace
+    networks:
+      - lab_network
 
 networks:
   lab_network:

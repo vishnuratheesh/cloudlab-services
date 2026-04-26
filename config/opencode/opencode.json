@@ -1,0 +1,5 @@
+{
+  "apiType": "ollama",
+  "apiBaseUrl": "http://ollama:11434",
+  "apiModel": "qwen2.5-coder:7b"
+}
