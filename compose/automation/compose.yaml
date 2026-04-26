@@ -50,7 +50,6 @@ services:
     volumes:
       - ../../data/n8n:/home/node/.n8n
       - ../../data/shared-workspace:/workspace
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       n8n-init:
         condition: service_completed_successfully
@@ -61,9 +60,7 @@ services:
     image: ghcr.io/anomalyco/opencode:1.0.196
     container_name: opencode
     restart: unless-stopped
-    command: ["sleep", "infinity"]
-    tty: true
-    stdin_open: true
+    command: ["opencode", "serve", "--hostname", "0.0.0.0"]
     user: "1000:1000"
     volumes:
       - ../../config/opencode/opencode.json:/home/opencode/.config/opencode/opencode.json

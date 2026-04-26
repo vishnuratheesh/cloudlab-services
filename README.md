@@ -227,7 +227,9 @@ To build AI workflows in n8n using your local models:
 ### 4. Integrating OpenCode with n8n
 The stack includes **OpenCode**, an open-source AI coding agent.
 1. OpenCode is configured to use the local Ollama instance (`qwen2.5-coder:7b`) and shares a workspace (`/workspace`) with `n8n`.
-2. `n8n` can spin up workflows that execute OpenCode inside its container to write applications, and then `n8n` can manage pushing those files from the shared workspace to a Git repository to trigger deployments.
+2. OpenCode runs as a headless HTTP server exposing an OpenAPI 3.1 endpoint.
+3. `n8n` can spin up workflows that interact with OpenCode via standard HTTP Request nodes (to `http://opencode:4096`) to generate or modify applications.
+4. `n8n` can then manage pushing those generated files from the shared workspace to a Git repository to trigger deployments.
 
 ## Maintenance
 
